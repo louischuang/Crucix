@@ -60,6 +60,22 @@ function persistLLMArtifacts(data) {
   console.log(`[Crucix] LLM artifacts saved to ${latestPath}`);
 }
 
+function applyLatestLLMArtifacts(data) {
+  try {
+    const latestPath = join(LLM_RUNS_DIR, 'latest.json');
+    if (!existsSync(latestPath)) return data;
+
+    const artifacts = JSON.parse(readFileSync(latestPath, 'utf8'));
+    data.ideas = Array.isArray(artifacts.ideas) ? artifacts.ideas : (data.ideas || []);
+    data.ideasSource = artifacts.ideasSource || data.ideasSource || 'disabled';
+    data.aiBrief = artifacts.aiBrief || data.aiBrief || null;
+    console.log('[Crucix] Loaded LLM artifacts from runs/llm/latest.json');
+  } catch (err) {
+    console.warn('[Crucix] Could not load LLM artifacts:', err.message);
+  }
+  return data;
+}
+
 // === Delta/Memory ===
 const memory = new MemoryManager(RUNS_DIR);
 
@@ -484,7 +500,7 @@ async function start() {
     try {
       const existing = JSON.parse(readFileSync(join(RUNS_DIR, 'latest.json'), 'utf8'));
       const data = await synthesize(existing);
-      currentData = data;
+      currentData = applyLatestLLMArtifacts(data);
       console.log('[Crucix] Loaded existing data from runs/latest.json — dashboard ready instantly');
       broadcast({ type: 'update', data: currentData });
     } catch {

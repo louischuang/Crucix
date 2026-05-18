@@ -257,6 +257,14 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
 .ideas-src{font-family:var(--mono);font-size:8px;letter-spacing:0.08em;padding:2px 6px;border:1px solid;display:inline-block;margin-left:6px}
 .ideas-src.llm{color:#ce93d8;border-color:rgba(206,147,216,0.4);background:rgba(206,147,216,0.08)}
 .ideas-src.static{color:var(--dim);border-color:rgba(255,255,255,0.1);background:rgba(255,255,255,0.03)}
+.ai-brief{flex:1 1 100%;max-width:none}
+.brief-summary{font-size:12px;line-height:1.5;color:var(--text);margin-bottom:10px}
+.brief-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.brief-block{border:1px solid rgba(100,240,200,0.1);background:rgba(255,255,255,0.025);padding:8px;min-height:86px}
+.brief-block h4{font-family:var(--mono);font-size:9px;letter-spacing:0.08em;color:var(--dim);margin:0 0 6px;text-transform:uppercase}
+.brief-block ul{margin:0;padding-left:14px}
+.brief-block li{font-size:10px;line-height:1.35;margin-bottom:5px;color:#c8d8d2}
+.brief-empty{padding:14px;text-align:center;color:var(--dim);font-family:var(--mono);font-size:10px}
 
 /* LOW PERFORMANCE MODE */
 body.low-perf .bg-grid,body.low-perf .bg-radial,body.low-perf .scanline{display:none!important}
@@ -288,6 +296,7 @@ body.low-perf .ticker-wrap::-webkit-scrollbar-thumb{background:rgba(100,240,200,
   .map-legend{left:8px;right:8px;bottom:8px;gap:4px}
   .leg-item{font-size:8px}
   .lower .lp-ticker,.lower .lp-osint,.lower .lp-macro,.lower .lp-ideas{flex:1 1 100%;max-width:none}
+  .brief-grid{grid-template-columns:1fr}
   .metrics-row{grid-template-columns:repeat(2,1fr)}
   .src-grid{grid-template-columns:repeat(2,1fr)}
   .glossary-panel{top:auto;right:0;left:0;bottom:0;width:100%;max-height:min(72vh,720px);border-left:none;border-right:none;border-bottom:none}
@@ -1527,8 +1536,22 @@ function renderRight(){
     deltaRows.push(`<div class="delta-row"><span class="delta-badge down">&#9660;</span><span class="delta-label">${s.label||s.key}</span><span class="delta-val">${s.from}→${s.to} (${val})</span></div>`);
   }
   const deltaHtml = hasDelta ? deltaRows.join('') : `<div style="padding:12px;text-align:center;color:var(--dim);font-family:var(--mono);font-size:10px">${t('delta.noChanges','No changes since last sweep')}</div>`;
+  const brief = D.aiBrief || null;
+  const briefList = items => (items||[]).slice(0,3).map(item=>`<li>${cleanText(item)}</li>`).join('');
+  const briefHtml = brief ? `
+    <div class="brief-summary">${cleanText(brief.executiveSummary||'')}</div>
+    <div class="brief-grid">
+      <div class="brief-block"><h4>Key Risks</h4><ul>${briefList(brief.keyRisks)}</ul></div>
+      <div class="brief-block"><h4>Market Implications</h4><ul>${briefList(brief.marketImplications)}</ul></div>
+      <div class="brief-block"><h4>Watchlist</h4><ul>${briefList(brief.watchlist)}</ul></div>
+    </div>` : `<div class="brief-empty">AI BRIEF PENDING</div>`;
+  const briefPanel = `<div class="g-panel ai-brief">
+      <div class="sec-head"><h3>AI Brief</h3>${brief?`<span class="ideas-src llm">${(brief.confidence||'MEDIUM').toUpperCase()} CONFIDENCE</span>`:'<span class="ideas-src static">PENDING</span>'}</div>
+      ${briefHtml}
+    </div>`;
 
   document.getElementById('rightRail').innerHTML=`
+    ${briefPanel}
     <div class="g-panel right-signals">
       <div class="sec-head"><h3>${t('panels.crossSourceSignals','Cross-Source Signals')}</h3><span class="badge">${t('badges.worldview','WORLDVIEW')}</span></div>
       ${signals}
@@ -1763,13 +1786,18 @@ document.addEventListener('DOMContentLoaded', () => {
   const hasInlineData = !!(D && D.meta);
   const canProbeApi = location.protocol !== 'file:';
 
-  if (canProbeApi && !hasInlineData) {
-    // Server mode: always fetch live data from API (ignore any stale inline D)
+  if (canProbeApi) {
+    // Server mode: prefer live API data because inline D may be a stale file-mode snapshot.
     fetch('/api/data')
       .then(r => r.json())
-      .then(data => { D = data; init(); connectSSE(); })
+      .then(data => {
+        if (!data?.meta) throw new Error(data?.error || 'Live data unavailable');
+        D = data;
+        init();
+        connectSSE();
+      })
       .catch(() => {
-        // Should not reach here — server routes to loading.html when no data
+        // Fall back to inline data if the API is not ready or unavailable.
         if (D && D.meta) { init(); connectSSE(); }
       });
   } else if (hasInlineData) {

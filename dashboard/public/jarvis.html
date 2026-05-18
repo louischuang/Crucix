@@ -560,6 +560,122 @@ const signalGuideItems = [
     example:'A delta marked risk-off with several new and escalated items means the latest sweep materially worsened the signal mix.'
   }
 ];
+const signalGuideTranslations = {
+  zh: {
+    'No Callsign': {
+      term: '無呼號',
+      category: '空中',
+      meaning: 'OpenSky 在該筆航跡中收到沒有可用呼號或航班 ID 的飛機紀錄。',
+      matters: '可作為透明度訊號。若缺少呼號的航跡集中出現，可能代表轉發器資料不完整，或該區域交通透明度較低。',
+      notMeaning: '單獨來看，不能證明是軍事、隱蔽或敵對活動。',
+      example: '南海：No Callsign 6 of 152 代表該戰區 152 筆航跡中，有 6 筆在資料源中沒有可用呼號。'
+    },
+    'High Altitude': {
+      term: '高高度',
+      category: '空中',
+      meaning: '目前 OpenSky 快照中，高於 12,000 公尺，約 39,000 英尺的飛機。',
+      matters: '用來區分巡航空層交通與較低高度的本地或區域移動。',
+      notMeaning: '不是危險分數，也不一定異常。商用客機常在這個高度飛行。',
+      example: 'High Altitude 2 代表該熱點中只有 2 架追蹤到的飛機高於巡航門檻。'
+    },
+    'Top Countries': {
+      term: '主要國家',
+      category: '空中',
+      meaning: '該熱點中最常見的 OpenSky origin_country 欄位。',
+      matters: '有助於理解某個戰區交通組成的粗略輪廓。',
+      notMeaning: '不代表目前由誰控制該飛機，也不是軍事所有權的直接指標。',
+      example: 'China (61), Philippines (39), Taiwan (17) 代表快照中登記來源國最多的是這些國家。'
+    },
+    FRP: {
+      term: 'FRP 火輻射功率',
+      category: '熱源',
+      meaning: 'Fire Radiative Power，表示單一 FIRMS 熱點的強度，單位為 MW。',
+      matters: 'FRP 越高，通常代表該點火勢更熱、更大，或能量更強。',
+      notMeaning: '不代表整個區域的強度，也不自動證明衝突活動。',
+      example: 'Sudan / Horn of Africa: FRP 92.3 MW 描述的是單一熱點；Total 1,451 才是整個區域偵測數。'
+    },
+    'Total Detections': {
+      term: '總偵測數',
+      category: '熱源',
+      meaning: '目前掃描中，整個區域桶內的 FIRMS 熱源偵測總數。',
+      matters: '有助於辨識異常活躍的火源聚落，特別是和歷史基準或夜間活動相比時。',
+      notMeaning: '不是你點擊的單一地圖點數量，也不必然等於衝突數量。',
+      example: 'Total 1,451 代表 Sudan / Horn of Africa 這個區域在該輪掃描中有 1,451 筆偵測。'
+    },
+    'Night Detections': {
+      term: '夜間偵測',
+      category: '熱源',
+      meaning: '在較大的 FIRMS 區域桶內，被標記為夜間發生的熱源偵測。',
+      matters: '夜間熱源較值得注意，因為相較日間農燒或例行燃燒，背景噪音可能較低。',
+      notMeaning: '不是直接戰鬥指標，仍需搭配位置、基準與其他來源交叉驗證。',
+      example: 'Night 140 代表該輪掃描中，區域 1,451 筆偵測裡有 140 筆為夜間偵測。'
+    },
+    Chokepoint: {
+      term: '咽喉點',
+      category: '海運',
+      meaning: '戰略海運通道或狹窄航道，貿易與能源流可能在此延誤、改道或受阻。',
+      matters: '這些節點重要，因為中斷可能影響全球運費、航行時間與商品價格。',
+      notMeaning: '不代表目前已經發生中斷。它是一個戰略監測位置。',
+      example: 'Bab el-Mandeb 或 Strait of Hormuz 很重要，因為航運與能源流量高度集中於此。'
+    },
+    'SDR Receiver': {
+      term: 'SDR 接收器',
+      category: '訊號',
+      meaning: '位於關注區域內或附近、公開可連線的軟體定義無線電接收器。',
+      matters: '接收器覆蓋越密，越能觀察該戰區的通訊或訊號活動。',
+      notMeaning: '本身不是敵對電磁發射或威脅證據，只是觀測與監測圖層。',
+      example: 'South China Sea SDR count 代表該區或附近有可公開存取的 KiwiSDR 接收器。'
+    },
+    CPM: {
+      term: 'CPM 每分鐘計數',
+      category: '輻射',
+      meaning: '輻射監測來源的每分鐘計數，在這裡用來表示站點的相對輻射狀態。',
+      matters: '可用來觀察相對於該站正常範圍的異常，或比較連續讀值趨勢。',
+      notMeaning: '不是單獨的安全結論。解讀取決於當地基準與趨勢，而不是原始數值本身。',
+      example: '某站讀值 33 CPM 若符合當地日常背景值，就可能是正常狀態。'
+    },
+    'HY Spread': {
+      term: '高收益利差',
+      category: '宏觀',
+      meaning: '高收益信用利差，這裡作為 FRED 信用資料中的壓力代理指標。',
+      matters: '利差擴大時，市場通常正在定價更高的信用壓力與更緊的金融條件。',
+      notMeaning: '不是單獨的衰退判斷，而是眾多壓力訊號之一。',
+      example: 'HY Spread 上升若同時伴隨 VIX 上升與股市轉弱，會比單看 HY 更像避險模式。'
+    },
+    VIX: {
+      term: 'VIX 波動率指數',
+      category: '宏觀',
+      meaning: 'CBOE 波動率指數，常被用作市場隱含恐慌或波動預期指標。',
+      matters: 'VIX 越高，通常代表市場預期股市波動更大，防禦性部位也可能增加。',
+      notMeaning: '不是崩盤預測，也不是單獨的地緣政治指標。',
+      example: 'VIX 高於 20 且 HY spread 同步擴大，比單看 VIX 更像市場壓力訊號。'
+    },
+    GSCPI: {
+      term: 'GSCPI 全球供應鏈壓力指數',
+      category: '宏觀',
+      meaning: 'Global Supply Chain Pressure Index，用來衡量全球供應鏈緊張程度的廣泛指標。',
+      matters: '它能協助把地緣政治或天氣中斷，轉譯為運輸、庫存與價格壓力。',
+      notMeaning: '不是即時市場價格，也不是公司層級的供應鏈分數。',
+      example: 'GSCPI 較高時，航線或能源衝擊更可能外溢成廣泛成本壓力。'
+    },
+    'WHO Alert': {
+      term: 'WHO 警示',
+      category: '健康',
+      meaning: '健康圖層中浮現的 WHO Disease Outbreak News 或疫情相關公告。',
+      matters: '有助於監測可能影響旅行、供應鏈、人道壓力或區域營運條件的疫情。',
+      notMeaning: '不是大流行宣告，也不自動代表高嚴重度。',
+      example: '若 WHO 警示出現在港口密集區，且與航運、邊境管制或地方不穩重疊，重要性會更高。'
+    },
+    'Sweep Delta': {
+      term: '掃描變化',
+      category: '平台',
+      meaning: '目前掃描與上一輪掃描之間的變化摘要，包含新增、升溫與降溫訊號。',
+      matters: '有助於快速看出最近發生了什麼改變，不必重新閱讀整個 dashboard。',
+      notMeaning: '不是完整風險模型，而是建立在原始訊號之上的方向性變化層。',
+      example: '若 delta 標記為 risk-off 且有多個新增與升溫項目，代表最新掃描的訊號組合明顯惡化。'
+    }
+  }
+};
 const regionPOV = {
   world: { lat: 20, lng: 20, altitude: 1.8 },
   americas: { lat: 35, lng: -95, altitude: 1.0 },
@@ -1699,18 +1815,50 @@ function buildOsintPanel(panelClass='', maxHeight=260){
 function renderGlossary(){
   const body = document.getElementById('glossaryBody');
   if(!body) return;
-  body.innerHTML = signalGuideItems.map(item => `
+  const copy = currentLang === 'zh'
+    ? {
+      kicker: '訊號說明',
+      title: '這些訊號實際代表什麼',
+      sub: '用白話解釋它的意義、為什麼重要，以及不應該過度推論的地方。',
+      meaning: '意義',
+      matters: '重要性',
+      notMeaning: '不能證明',
+      example: '範例',
+      foot: '請把這些視為解讀指南，而不是結論。較強的判斷應該來自多個圖層的交叉驗證，而不是單一訊號。'
+    }
+    : {
+      kicker: 'Signal Guide',
+      title: 'What the signals actually mean',
+      sub: 'Plain-English interpretation, why it matters, and what you should not infer from it.',
+      meaning: 'Meaning',
+      matters: 'Why it matters',
+      notMeaning: 'Not proof of',
+      example: 'Example',
+      foot: 'Treat these as interpretation guides, not conclusions. Stronger judgments should come from corroboration across multiple layers, not from a single signal viewed in isolation.'
+    };
+  const kicker = document.querySelector('.glossary-kicker');
+  const title = document.querySelector('.glossary-title');
+  const sub = document.querySelector('.glossary-sub');
+  const foot = document.querySelector('.glossary-foot');
+  if(kicker) kicker.textContent = copy.kicker;
+  if(title) title.textContent = copy.title;
+  if(sub) sub.textContent = copy.sub;
+  if(foot) foot.textContent = copy.foot;
+
+  body.innerHTML = signalGuideItems.map(item => {
+    const view = signalGuideTranslations[currentLang]?.[item.term] || item;
+    return `
     <div class="glossary-card">
       <div class="glossary-term">
-        <strong>${item.term}</strong>
-        <span class="glossary-tag">${item.category}</span>
+        <strong>${view.term}</strong>
+        <span class="glossary-tag">${view.category}</span>
       </div>
-      <div class="glossary-line"><span class="glossary-label">Meaning</span>${item.meaning}</div>
-      <div class="glossary-line"><span class="glossary-label">Why it matters</span>${item.matters}</div>
-      <div class="glossary-line"><span class="glossary-label">Not proof of</span>${item.notMeaning}</div>
-      <div class="glossary-line"><span class="glossary-label">Example</span>${item.example}</div>
+      <div class="glossary-line"><span class="glossary-label">${copy.meaning}</span>${view.meaning}</div>
+      <div class="glossary-line"><span class="glossary-label">${copy.matters}</span>${view.matters}</div>
+      <div class="glossary-line"><span class="glossary-label">${copy.notMeaning}</span>${view.notMeaning}</div>
+      <div class="glossary-line"><span class="glossary-label">${copy.example}</span>${view.example}</div>
     </div>
-  `).join('');
+  `}).join('');
 }
 
 function openGlossary(){

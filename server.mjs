@@ -18,6 +18,7 @@ import { generateLLMBrief } from './lib/llm/brief.mjs';
 import { generateDashboardTranslations } from './lib/llm/translate.mjs';
 import { TelegramAlerter } from './lib/alerts/telegram.mjs';
 import { DiscordAlerter } from './lib/alerts/discord.mjs';
+import { createPublicApiRouter } from './public-api/index.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = __dirname;
@@ -279,6 +280,17 @@ if (discordAlerter.isConfigured) {
 // === Express Server ===
 const app = express();
 app.use(express.static(join(ROOT, 'dashboard/public')));
+app.use('/public-api', createPublicApiRouter({
+  getState: () => ({
+    currentData,
+    lastSweepTime,
+    sweepStartedAt,
+    sweepInProgress,
+    startTime,
+    config,
+    currentLanguage,
+  }),
+}));
 
 // Serve loading page until first sweep completes, then the dashboard with injected locale
 app.get('/', (req, res) => {

@@ -14,6 +14,7 @@ import { synthesize, generateIdeas } from './dashboard/inject.mjs';
 import { MemoryManager } from './lib/delta/index.mjs';
 import { createLLMProvider } from './lib/llm/index.mjs';
 import { generateLLMIdeas } from './lib/llm/ideas.mjs';
+import { generateLLMBrief } from './lib/llm/brief.mjs';
 import { TelegramAlerter } from './lib/alerts/telegram.mjs';
 import { DiscordAlerter } from './lib/alerts/discord.mjs';
 
@@ -21,9 +22,10 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = __dirname;
 const RUNS_DIR = join(ROOT, 'runs');
 const MEMORY_DIR = join(RUNS_DIR, 'memory');
+const LLM_RUNS_DIR = join(RUNS_DIR, 'llm');
 
 // Ensure directories exist
-for (const dir of [RUNS_DIR, MEMORY_DIR, join(MEMORY_DIR, 'cold')]) {
+for (const dir of [RUNS_DIR, MEMORY_DIR, join(MEMORY_DIR, 'cold'), LLM_RUNS_DIR]) {
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
 }
 
@@ -34,6 +36,29 @@ let sweepStartedAt = null; // Timestamp when current/last sweep started
 let sweepInProgress = false;
 const startTime = Date.now();
 const sseClients = new Set();
+
+function safeTimestamp(ts = new Date().toISOString()) {
+  return ts.replace(/[:.]/g, '-');
+}
+
+function persistLLMArtifacts(data) {
+  const payload = {
+    timestamp: data.meta?.timestamp || new Date().toISOString(),
+    provider: config.llm.provider || null,
+    model: llmProvider?.model || config.llm.model || null,
+    ideasSource: data.ideasSource || 'disabled',
+    ideas: data.ideas || [],
+    aiBrief: data.aiBrief || null,
+    meta: data.meta || null,
+    deltaSummary: data.delta?.summary || null,
+  };
+
+  const latestPath = join(LLM_RUNS_DIR, 'latest.json');
+  const runPath = join(LLM_RUNS_DIR, `${safeTimestamp(payload.timestamp)}.json`);
+  writeFileSync(latestPath, JSON.stringify(payload, null, 2));
+  writeFileSync(runPath, JSON.stringify(payload, null, 2));
+  console.log(`[Crucix] LLM artifacts saved to ${latestPath}`);
+}
 
 // === Delta/Memory ===
 const memory = new MemoryManager(RUNS_DIR);
@@ -357,10 +382,23 @@ async function runSweepCycle() {
         synthesized.ideas = [];
         synthesized.ideasSource = 'llm-failed';
       }
+
+      try {
+        console.log('[Crucix] Generating LLM AI brief...');
+        const aiBrief = await generateLLMBrief(llmProvider, synthesized, delta, synthesized.ideas || []);
+        synthesized.aiBrief = aiBrief;
+        console.log(`[Crucix] LLM AI brief ${aiBrief ? 'generated' : 'not generated'}`);
+      } catch (briefErr) {
+        console.error('[Crucix] LLM AI brief failed (non-fatal):', briefErr.message);
+        synthesized.aiBrief = null;
+      }
     } else {
       synthesized.ideas = [];
       synthesized.ideasSource = 'disabled';
+      synthesized.aiBrief = null;
     }
+
+    persistLLMArtifacts(synthesized);
 
     // 6. Alert evaluation — Telegram + Discord (LLM with rule-based fallback, multi-tier, semantic dedup)
     if (delta?.summary?.totalChanges > 0) {

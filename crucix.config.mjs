@@ -11,6 +11,9 @@ export default {
     apiKey: process.env.LLM_API_KEY || null,
     model: process.env.LLM_MODEL || null,
     baseUrl: process.env.OLLAMA_BASE_URL || null,
+    timeoutMs: parseInt(process.env.LLM_TIMEOUT_MS) || 300000,
+    ollamaThink: process.env.OLLAMA_THINK || 'false',
+    ollamaTemperature: process.env.OLLAMA_TEMPERATURE || '0.2',
   },
 
   telegram: {

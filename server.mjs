@@ -291,7 +291,7 @@ app.get('/', (req, res) => {
     // Inject locale data into the HTML
     const locale = getLocale();
     const allLocales = getAllLocales();
-    const localeScript = `<script>window.__CRUCIX_LOCALE__ = ${JSON.stringify(locale).replace(/<\/script>/gi, '<\\/script>')}; window.__CRUCIX_LOCALES__ = ${JSON.stringify(allLocales).replace(/<\/script>/gi, '<\\/script>')}; window.__CRUCIX_LANG__ = ${JSON.stringify(currentLanguage)};</script>`;
+    const localeScript = `<script>window.__CRUCIX_LOCALE__ = ${JSON.stringify(locale).replace(/<\/script>/gi, '<\\/script>')}; window.__CRUCIX_LOCALES__ = ${JSON.stringify(allLocales).replace(/<\/script>/gi, '<\\/script>')}; window.__CRUCIX_LANG__ = ${JSON.stringify(currentLanguage)}; window.__CRUCIX_DATA__ = ${JSON.stringify(currentData).replace(/<\/script>/gi, '<\\/script>')};</script>`;
     html = html.replace('</head>', `${localeScript}\n</head>`);
     
     res.type('html').send(html);
@@ -412,6 +412,12 @@ async function runSweepCycle() {
         console.error('[Crucix] LLM AI brief failed (non-fatal):', briefErr.message);
         synthesized.aiBrief = null;
       }
+
+      // Publish LLM ideas/brief as soon as they are ready. Translation can take much
+      // longer on local Ollama models, and should not keep the dashboard on stale ideas.
+      persistLLMArtifacts(synthesized);
+      currentData = synthesized;
+      broadcast({ type: 'update', data: currentData });
 
       try {
         console.log('[Crucix] Generating LLM dashboard translations...');

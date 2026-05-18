@@ -6,9 +6,12 @@
   },
   "dashboard": {
     "title": "CRUCIX — 情報終端",
+    "brand": "CRUCIX 監測",
+    "regime": "戰時停滯性通膨風險",
     "visuals": "視覺",
     "visualsLite": "輕量",
     "visualsFull": "完整",
+    "perfTitle": "降低視覺效果，並讓手機優先使用平面模式",
     "sweep": "掃描",
     "sources": "來源",
     "delta": "變化",
@@ -16,7 +19,8 @@
     "riskOn": "風險偏好",
     "mixed": "混合",
     "guideBtn": "訊號說明",
-    "highAlert": "高度警戒"
+    "highAlert": "高度警戒",
+    "terminalActive": "終端啟用"
   },
   "language": {
     "label": "語系",
@@ -46,9 +50,11 @@
     "newsTicker": "即時新聞",
     "sweepDelta": "掃描變化",
     "macroMarkets": "宏觀與市場",
+    "riskGauges": "風險儀表",
     "crossSourceSignals": "跨來源訊號",
     "signalCore": "訊號核心",
-    "aiBrief": "AI 簡報"
+    "aiBrief": "AI 簡報",
+    "spaceWatch": "太空監測"
   },
   "layers": {
     "airActivity": "空中活動",
@@ -68,7 +74,9 @@
     "monitors": "監測點",
     "fatalities": "死亡",
     "whoAlerts": "WHO 警示",
-    "rssGeolocated": "RSS 定位"
+    "rssGeolocated": "RSS 定位",
+    "newObjects30d": "30 日新物件",
+    "militarySats": "軍用衛星"
   },
   "regions": {
     "world": "全球",
@@ -86,7 +94,9 @@
     "urgent": "緊急",
     "worldview": "全球視角",
     "hotMetrics": "熱點指標",
-    "sweeping": "掃描中..."
+    "sweeping": "掃描中...",
+    "stress": "壓力",
+    "orbital": "軌道"
   },
   "ideas": {
     "aiEnhanced": "AI 強化",
@@ -94,6 +104,8 @@
     "pending": "等待中",
     "llmNotConfigured": "LLM 未設定",
     "llmHelp": "設定 LLM_PROVIDER 與憑證以啟用 AI trade ideas",
+    "confidence": "信心",
+    "horizon": "週期",
     "risk": "風險",
     "disclosure": "僅供資訊參考。這不是財務建議、買賣建議或任何形式的招攬。所有訊號觀察皆來自公開 OSINT 資料，不應作為投資決策唯一依據。投資前請諮詢合格財務顧問。過去績效不保證未來結果。"
   },
@@ -102,7 +114,15 @@
     "marketImplications": "市場含義",
     "watchlist": "觀察清單",
     "pending": "AI 簡報等待中",
-    "confidence": "信心"
+    "confidence": "信心",
+    "high": "高",
+    "medium": "中",
+    "low": "低"
+  },
+  "nuclear": {
+    "allSitesNormal": "所有站點正常",
+    "anomalyDetected": "偵測到異常",
+    "noData": "無資料"
   },
   "delta": {
     "baseline": "基準",
@@ -118,11 +138,110 @@
     "indexes": "指數",
     "crypto": "加密貨幣",
     "energyMacro": "能源 + 宏觀",
-    "wti5day": "WTI 5 日"
+    "energyMetalsMacro": "能源 + 金屬 + 宏觀",
+    "wti5day": "WTI 5 日",
+    "wtiCrude": "WTI 原油",
+    "brent": "布蘭特",
+    "natGas": "天然氣",
+    "gold": "黃金",
+    "silver": "白銀",
+    "vix": "VIX",
+    "fear": "恐慌",
+    "fedFunds": "聯邦基金",
+    "gscpi": "GSCPI",
+    "cpiMom": "CPI 月變動",
+    "unemployment": "失業率",
+    "hySpread": "高收益利差",
+    "usdIndex": "美元指數",
+    "joblessClaims": "初領失業金",
+    "mortgage30y": "30 年房貸",
+    "m2Supply": "M2 貨幣供給",
+    "natDebt": "國債",
+    "vsPrior": "較前期",
+    "today": "今日",
+    "comexProxy": "COMEX 代理",
+    "volatilityIndex": "波動率指數",
+    "dollarPerBbl": "美元/桶",
+    "dollarPerMmbtu": "美元/MMBtu"
   },
   "map": {
     "scrollToZoom": "滾輪縮放 · 拖曳平移",
+    "dragRotateZoom": "拖曳旋轉 · 滾輪縮放",
+    "initializingGlobe": "初始化 3D 地球",
+    "loadFailedFlat": "3D 載入失敗 · 平面模式",
     "globeMode": "地球模式",
-    "flatMode": "平面模式"
+    "flatMode": "平面模式",
+    "worldNews": "世界新聞",
+    "healthAlert": "健康警示",
+    "chokepoint": "咽喉點",
+    "nuclearSite": "核設施",
+    "osintEvent": "OSINT 事件",
+    "thermalDetection": "熱源偵測",
+    "aircraft": "航機",
+    "rssGeolocated": "RSS 定位",
+    "airTraffic": "空中交通",
+    "thermalFire": "熱源/火災",
+    "conflict": "衝突",
+    "sdrReceiver": "SDR 接收器",
+    "earthquake": "地震",
+    "disaster": "災害",
+    "weatherAlert": "天氣警示",
+    "epaRadNet": "EPA RadNet",
+    "spaceStation": "太空站",
+    "gdeltEvent": "GDELT 事件",
+    "firmsSatellite": "FIRMS 衛星",
+    "airActivity": "空中活動",
+    "maritimeIntel": "海事情資",
+    "radiationMonitoring": "輻射監測",
+    "kiwiSdrNetwork": "KiwiSDR 網路",
+    "whoOutbreak": "WHO 疫情",
+    "epaRadiationMonitor": "EPA 輻射監測",
+    "spaceStationApprox": "太空站（估算）",
+    "globalEventDetection": "全球事件偵測",
+    "status": "狀態",
+    "normal": "正常",
+    "anomaly": "異常",
+    "avgCpm": "平均 CPM",
+    "readings": "讀值",
+    "region": "區域",
+    "total": "總數",
+    "night": "夜間",
+    "zone": "區域",
+    "inZone": "位於此區",
+    "views": "觀看",
+    "aircraftTracked": "架航機追蹤",
+    "noCallsign": "無呼號",
+    "highAltitude": "高空",
+    "top": "主要",
+    "state": "州別",
+    "orbitalPositionEstimate": "軌道位置估算",
+    "date": "日期",
+    "fatalities": "死亡",
+    "reports": "報告"
+  },
+  "signalMetrics": {
+    "incidentTempo": "事件節奏",
+    "airTheaters": "空域戰區",
+    "thermalSpikes": "熱源尖峰",
+    "sdrNodes": "SDR 節點",
+    "chokepoints": "咽喉點",
+    "whoAlerts": "WHO 警示"
+  },
+  "space": {
+    "newLast30d": "30 日新增",
+    "militarySats": "軍用衛星",
+    "milSats": "軍衛星",
+    "noData": "無太空資料"
+  },
+  "common": {
+    "noData": "無資料",
+    "signal": "訊號",
+    "new": "新增",
+    "pending": "等待中"
+  },
+  "time": {
+    "justNow": "剛剛",
+    "hoursAgo": "{hours} 小時前",
+    "daysAgo": "{days} 天前"
   }
 }

@@ -106,6 +106,10 @@ function sumAirHotspots(hotspots = []) {
   return hotspots.reduce((sum, hotspot) => sum + (hotspot.totalAircraft || 0), 0);
 }
 
+function plainText(html = '') {
+  return String(html || '').replace(/<br\s*\/?>/gi, ' · ').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+}
+
 function summarizeAirHotspots(hotspots = []) {
   return hotspots.map(h => ({
     region: h.region,
@@ -538,6 +542,36 @@ export async function synthesize(data) {
       lat: p.lat, lon: p.lon, name: (p.name || '').substring(0, 80), count: p.count || 1
     }))
   };
+  const newsMonitorData = data.sources.NewsMonitor || {};
+  const newsMonitor = {
+    summary: newsMonitorData.summary || {},
+    feeds: newsMonitorData.feeds || [],
+    items: (newsMonitorData.items || []).slice(0, 30).map(item => ({
+      title: item.title?.substring(0, 140),
+      source: item.source,
+      date: item.timestamp,
+      url: sanitizeExternalUrl(item.url),
+      region: item.region,
+      category: item.category,
+      urgent: Boolean(item.urgent),
+      summary: item.summary?.substring(0, 180),
+    })),
+  };
+  const officialMonitorData = data.sources.OfficialMonitor || {};
+  const officialMonitor = {
+    summary: officialMonitorData.summary || {},
+    monitors: officialMonitorData.monitors || [],
+    items: (officialMonitorData.items || []).slice(0, 30).map(item => ({
+      title: item.title?.substring(0, 140),
+      source: item.source,
+      date: item.timestamp,
+      url: sanitizeExternalUrl(item.url),
+      region: item.region,
+      category: item.category,
+      urgent: Boolean(item.urgent),
+      summary: item.summary?.substring(0, 180),
+    })),
+  };
 
   const health = Object.entries(data.sources).map(([name, src]) => ({
     n: name, err: Boolean(src.error), stale: Boolean(src.stale)
@@ -592,9 +626,34 @@ export async function synthesize(data) {
   if (yfBrent?.price) energy.brent = yfBrent.price;
   if (yfNatgas?.price) energy.natgas = yfNatgas.price;
   if (yfWti?.history?.length) energy.wtiRecent = yfWti.history.map(h => h.close);
+  const sdr = { total: sdrNet.totalReceivers || 0, online: sdrNet.online || 0, zones: sdrZones };
 
   // Fetch RSS
   const news = await fetchAllNews();
+  const buildMapMarkers = () => {
+    const markers = [];
+    const push = (id, type, head, text, meta) => markers.push({
+      id,
+      type,
+      head: plainText(head).substring(0, 140),
+      text: plainText(text).substring(0, 260),
+      meta: plainText(meta).substring(0, 140),
+    });
+    air.forEach((a, i) => push(`air-${i}`, 'air', a.region, `${a.total} aircraft tracked. No callsign: ${a.noCallsign}. High altitude: ${a.highAlt}. Top: ${(a.top || []).slice(0, 3).map(t => `${t[0]} (${t[1]})`).join(', ')}`, 'Air Activity'));
+    thermal.forEach((th, ti) => th.fires.slice(0, 3).forEach((f, fi) => push(`thermal-${ti}-${fi}`, 'thermal', 'Thermal Detection', `${th.region}. FRP: ${f.frp?.toFixed?.(1) || f.frp} MW. Total: ${th.det}. Night: ${th.night}`, 'FIRMS Satellite')));
+    chokepoints.forEach((cp, i) => push(`maritime-${i}`, 'maritime', cp.label, cp.note, 'Maritime Intelligence'));
+    nuke.forEach((n, i) => push(`nuke-${i}`, 'nuke', n.site, `Status: ${n.anom ? 'ANOMALY' : 'Normal'}. Avg CPM: ${n.cpm?.toFixed?.(1) || 'No data'}. Readings: ${n.n}`, 'Radiation Monitoring'));
+    sdr.zones.forEach((z, zi) => z.receivers.slice(0, 2).forEach((r, ri) => push(`sdr-${zi}-${ri}`, 'sdr', 'SDR Receiver', `${r.name}. Zone: ${z.region}. ${z.count} in zone`, 'KiwiSDR Network')));
+    tgUrgent.slice(0, 10).forEach((p, i) => push(`osint-${i}`, 'osint', (p.channel || '').toUpperCase(), p.text, `${p.views || '?'} views`));
+    who.slice(0, 10).forEach((w, i) => push(`health-${i}`, 'health', w.title, w.summary || '', 'WHO Outbreak'));
+    news.slice(0, 30).forEach((n, i) => push(`news-${i}`, 'news', `${n.source || 'NEWS'} World News`, n.title, `${n.region || ''}`));
+    (noaa.alerts || []).forEach((a, i) => push(`weather-${i}`, 'weather', a.event, a.headline || '', `NOAA/NWS · ${a.severity || ''}`));
+    (epa.stations || []).forEach((s, i) => push(`radiation-${i}`, 'radiation', `RadNet: ${s.location}`, `${s.analyte || '--'}: ${s.result || '--'} ${s.unit || ''}. State: ${s.state || ''}`, 'EPA Radiation Monitor'));
+    (space.stationPositions || []).forEach((s, i) => push(`space-${i}`, 'space', s.name, `Orbital position estimate. Lat: ${s.lat} Lon: ${s.lon}`, 'Space Station'));
+    (gdelt.geoPoints || []).forEach((g, i) => push(`gdelt-${i}`, 'gdelt', 'GDELT Event', g.name || 'Global event detection', `${g.count || 1} reports`));
+    (acled.deadliestEvents || []).filter(e => e.lat && e.lon).forEach((e, i) => push(`conflict-${i}`, 'conflict', e.type || 'CONFLICT', `${e.fatalities} fatalities. ${e.location}, ${e.country}. Date: ${e.date}`, 'ACLED Conflict Data'));
+    return markers.slice(0, 90);
+  };
 
   const V2 = {
     meta: data.crucix, air, thermal, tSignals, chokepoints, nuke, nukeSignals,
@@ -606,20 +665,21 @@ export async function synthesize(data) {
       ...(airFallback ? { fallbackFile: airFallback.file } : {}),
       ...(data.sources.OpenSky?.error ? { error: data.sources.OpenSky.error } : {}),
     },
-    sdr: { total: sdrNet.totalReceivers || 0, online: sdrNet.online || 0, zones: sdrZones },
+    sdr,
     tg: { posts: tgData.totalPosts || 0, urgent: tgUrgent, topPosts: tgTop },
-    who, fred, energy, metals, bls, treasury, gscpi, defense, noaa, epa, acled, gdelt, space, health, news,
+    who, fred, energy, metals, bls, treasury, gscpi, defense, noaa, epa, acled, gdelt, newsMonitor, officialMonitor, space, health, news,
     markets, // Live Yahoo Finance market data
     ideas: [], ideasSource: 'disabled',
+    mapMarkers: buildMapMarkers(),
     // newsFeed for ticker (merged RSS + GDELT + Telegram)
-    newsFeed: buildNewsFeed(news, gdeltData, tgUrgent, tgTop),
+    newsFeed: buildNewsFeed(news, gdeltData, tgUrgent, tgTop, newsMonitor.items, officialMonitor.items),
   };
 
   return V2;
 }
 
 // === Unified News Feed for Ticker ===
-function buildNewsFeed(rssNews, gdeltData, tgUrgent, tgTop) {
+function buildNewsFeed(rssNews, gdeltData, tgUrgent, tgTop, monitoredNews = [], officialNews = []) {
   const feed = [];
 
   // RSS news
@@ -627,6 +687,34 @@ function buildNewsFeed(rssNews, gdeltData, tgUrgent, tgTop) {
     feed.push({
       headline: n.title, source: n.source, type: 'rss',
       timestamp: n.date, region: n.region, urgent: false, url: n.url
+    });
+  }
+
+  // Curated NewsMonitor source
+  for (const n of monitoredNews) {
+    feed.push({
+      headline: n.title,
+      source: n.source,
+      type: 'news-monitor',
+      timestamp: n.date,
+      region: n.region || 'Global',
+      category: n.category,
+      urgent: Boolean(n.urgent),
+      url: n.url,
+    });
+  }
+
+  // Official policy, sanctions, and export-control notices
+  for (const n of officialNews) {
+    feed.push({
+      headline: n.title,
+      source: n.source,
+      type: 'official-monitor',
+      timestamp: n.date,
+      region: n.region || 'Global',
+      category: n.category,
+      urgent: Boolean(n.urgent),
+      url: n.url,
     });
   }
 
@@ -677,6 +765,9 @@ function buildNewsFeed(rssNews, gdeltData, tgUrgent, tgTop) {
   for (const source of REGIONAL_NEWS_SOURCES) {
     recent.filter(item => item.source === source).slice(0, 2).forEach(pushUnique);
   }
+  recent.filter(item => item.type === 'official-monitor' && item.urgent).slice(0, 8).forEach(pushUnique);
+  recent.filter(item => item.type === 'official-monitor').slice(0, 8).forEach(pushUnique);
+  recent.filter(item => item.type === 'news-monitor' && item.urgent).slice(0, 8).forEach(pushUnique);
   recent.forEach(pushUnique);
   return selected.slice(0, 50);
 }

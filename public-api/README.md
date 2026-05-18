@@ -16,9 +16,11 @@ GET /public-api/v1/ideas?lang=en|zh
 GET /public-api/v1/news?lang=en|zh
 GET /public-api/v1/sources
 GET /public-api/v1/locales
+GET /public-api/v1/languages
 ```
 
 Localized endpoints default to `lang=en`. Use `lang=zh` for Traditional Chinese when LLM translations are available.
+Use `/languages` when an integration needs display names and endpoint examples for a language selector.
 
 ## Authentication
 

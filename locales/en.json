@@ -114,6 +114,7 @@
     "loadFailedFlat": "3D LOAD FAILED · FLAT MODE",
     "globeMode": "GLOBE MODE",
     "flatMode": "FLAT MODE",
+    "toggleLayer": "Toggle layer",
     "earthquake": "Earthquake",
     "disaster": "Disaster",
     "weatherAlert": "Weather Alert",

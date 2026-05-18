@@ -1,4 +1,21 @@
 const SUPPORTED_LANGS = new Set(['en', 'zh']);
+const LANGUAGE_DEFS = [
+  {
+    code: 'en',
+    name: 'English',
+    nativeName: 'English',
+    direction: 'ltr',
+    default: true,
+  },
+  {
+    code: 'zh',
+    name: 'Traditional Chinese',
+    nativeName: '繁體中文',
+    direction: 'ltr',
+    default: false,
+  },
+];
+const LOCALIZED_ENDPOINTS = ['/brief', '/ideas', '/news'];
 
 export function normalizeLang(value) {
   return SUPPORTED_LANGS.has(value) ? value : 'en';
@@ -160,5 +177,22 @@ export function serializeLocales(state) {
     current: state.currentLanguage,
     supported: ['en', 'zh'],
     query: 'Use ?lang=en or ?lang=zh on localized endpoints.',
+  };
+}
+
+export function serializeLanguages(state) {
+  const current = normalizeLang(state.currentLanguage);
+  return {
+    current,
+    default: 'en',
+    languages: LANGUAGE_DEFS.map(language => ({
+      ...language,
+      active: language.code === current,
+    })),
+    localizedEndpoints: LOCALIZED_ENDPOINTS,
+    queryParameter: 'lang',
+    examples: LOCALIZED_ENDPOINTS.flatMap(endpoint => (
+      LANGUAGE_DEFS.map(language => `${endpoint}?lang=${language.code}`)
+    )),
   };
 }

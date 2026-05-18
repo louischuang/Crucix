@@ -427,6 +427,7 @@ async function runSweepCycle() {
 
       // Publish LLM ideas/brief as soon as they are ready. Translation can take much
       // longer on local Ollama models, and should not keep the dashboard on stale ideas.
+      synthesized.i18n = currentData?.i18n || synthesized.i18n || null;
       persistLLMArtifacts(synthesized);
       currentData = synthesized;
       broadcast({ type: 'update', data: currentData });
@@ -444,12 +445,12 @@ async function runSweepCycle() {
           }
           console.log('[Crucix] LLM dashboard translations generated');
         } else {
-          synthesized.i18n = null;
+          synthesized.i18n = currentData?.i18n || synthesized.i18n || null;
           console.log('[Crucix] LLM dashboard translations not generated');
         }
       } catch (translateErr) {
         console.error('[Crucix] LLM translations failed (non-fatal):', translateErr.message);
-        synthesized.i18n = null;
+        synthesized.i18n = currentData?.i18n || synthesized.i18n || null;
       }
     } else {
       synthesized.ideas = [];
@@ -502,7 +503,7 @@ async function start() {
   console.log(`
   ╔══════════════════════════════════════════════╗
   ║           CRUCIX INTELLIGENCE ENGINE         ║
-  ║          Local Palantir · 26 Sources         ║
+  ║          Local Palantir · 31 Sources         ║
   ╠══════════════════════════════════════════════╣
   ║  Dashboard:  http://localhost:${port}${' '.repeat(14 - String(port).length)}║
   ║  Health:     http://localhost:${port}/api/health${' '.repeat(4 - String(port).length)}║

@@ -7,6 +7,7 @@ import {
   serializeBrief,
   serializeHealth,
   serializeIdeas,
+  serializeLanguages,
   serializeLocales,
   serializeNews,
   serializeSources,
@@ -71,6 +72,10 @@ export function createPublicApiRouter({ getState }) {
 
   v1.get('/locales', (req, res) => {
     res.json(serializeLocales(getState()));
+  });
+
+  v1.get('/languages', (req, res) => {
+    res.json(serializeLanguages(getState()));
   });
 
   router.use('/v1', v1);

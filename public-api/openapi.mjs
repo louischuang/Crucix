@@ -89,6 +89,15 @@ export function buildOpenApiSpec() {
           },
         },
       },
+      '/languages': {
+        get: {
+          summary: 'Supported language list',
+          description: 'Returns display metadata for languages supported by localized public API endpoints.',
+          responses: {
+            200: { description: 'Supported languages and localized endpoint examples' },
+          },
+        },
+      },
     },
   };
 }

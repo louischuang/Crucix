@@ -171,6 +171,7 @@
     "loadFailedFlat": "3D 載入失敗 · 平面模式",
     "globeMode": "地球模式",
     "flatMode": "平面模式",
+    "toggleLayer": "切換圖層",
     "worldNews": "世界新聞",
     "healthAlert": "健康警示",
     "chokepoint": "咽喉點",

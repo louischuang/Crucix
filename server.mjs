@@ -8,13 +8,14 @@ import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { exec } from 'child_process';
 import config from './crucix.config.mjs';
-import { getLocale, currentLanguage, getSupportedLocales } from './lib/i18n.mjs';
+import { getLocale, getAllLocales, currentLanguage, getSupportedLocales } from './lib/i18n.mjs';
 import { fullBriefing } from './apis/briefing.mjs';
 import { synthesize, generateIdeas } from './dashboard/inject.mjs';
 import { MemoryManager } from './lib/delta/index.mjs';
 import { createLLMProvider } from './lib/llm/index.mjs';
 import { generateLLMIdeas } from './lib/llm/ideas.mjs';
 import { generateLLMBrief } from './lib/llm/brief.mjs';
+import { generateDashboardTranslations } from './lib/llm/translate.mjs';
 import { TelegramAlerter } from './lib/alerts/telegram.mjs';
 import { DiscordAlerter } from './lib/alerts/discord.mjs';
 
@@ -49,6 +50,7 @@ function persistLLMArtifacts(data) {
     ideasSource: data.ideasSource || 'disabled',
     ideas: data.ideas || [],
     aiBrief: data.aiBrief || null,
+    i18n: data.i18n || null,
     meta: data.meta || null,
     deltaSummary: data.delta?.summary || null,
   };
@@ -69,6 +71,7 @@ function applyLatestLLMArtifacts(data) {
     data.ideas = Array.isArray(artifacts.ideas) ? artifacts.ideas : (data.ideas || []);
     data.ideasSource = artifacts.ideasSource || data.ideasSource || 'disabled';
     data.aiBrief = artifacts.aiBrief || data.aiBrief || null;
+    data.i18n = artifacts.i18n || data.i18n || null;
     console.log('[Crucix] Loaded LLM artifacts from runs/llm/latest.json');
   } catch (err) {
     console.warn('[Crucix] Could not load LLM artifacts:', err.message);
@@ -287,7 +290,8 @@ app.get('/', (req, res) => {
     
     // Inject locale data into the HTML
     const locale = getLocale();
-    const localeScript = `<script>window.__CRUCIX_LOCALE__ = ${JSON.stringify(locale).replace(/<\/script>/gi, '<\\/script>')};</script>`;
+    const allLocales = getAllLocales();
+    const localeScript = `<script>window.__CRUCIX_LOCALE__ = ${JSON.stringify(locale).replace(/<\/script>/gi, '<\\/script>')}; window.__CRUCIX_LOCALES__ = ${JSON.stringify(allLocales).replace(/<\/script>/gi, '<\\/script>')}; window.__CRUCIX_LANG__ = ${JSON.stringify(currentLanguage)};</script>`;
     html = html.replace('</head>', `${localeScript}\n</head>`);
     
     res.type('html').send(html);
@@ -408,10 +412,32 @@ async function runSweepCycle() {
         console.error('[Crucix] LLM AI brief failed (non-fatal):', briefErr.message);
         synthesized.aiBrief = null;
       }
+
+      try {
+        console.log('[Crucix] Generating LLM dashboard translations...');
+        const translations = await generateDashboardTranslations(llmProvider, synthesized);
+        if (translations) {
+          synthesized.i18n = translations;
+          if (synthesized.aiBrief) {
+            synthesized.aiBrief.i18n = {
+              en: translations.en?.aiBrief || null,
+              zh: translations.zh?.aiBrief || null,
+            };
+          }
+          console.log('[Crucix] LLM dashboard translations generated');
+        } else {
+          synthesized.i18n = null;
+          console.log('[Crucix] LLM dashboard translations not generated');
+        }
+      } catch (translateErr) {
+        console.error('[Crucix] LLM translations failed (non-fatal):', translateErr.message);
+        synthesized.i18n = null;
+      }
     } else {
       synthesized.ideas = [];
       synthesized.ideasSource = 'disabled';
       synthesized.aiBrief = null;
+      synthesized.i18n = null;
     }
 
     persistLLMArtifacts(synthesized);

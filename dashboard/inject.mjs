@@ -646,7 +646,7 @@ export async function synthesize(data) {
     sdr.zones.forEach((z, zi) => z.receivers.slice(0, 2).forEach((r, ri) => push(`sdr-${zi}-${ri}`, 'sdr', 'SDR Receiver', `${r.name}. Zone: ${z.region}. ${z.count} in zone`, 'KiwiSDR Network')));
     tgUrgent.slice(0, 10).forEach((p, i) => push(`osint-${i}`, 'osint', (p.channel || '').toUpperCase(), p.text, `${p.views || '?'} views`));
     who.slice(0, 10).forEach((w, i) => push(`health-${i}`, 'health', w.title, w.summary || '', 'WHO Outbreak'));
-    news.slice(0, 30).forEach((n, i) => push(`news-${i}`, 'news', `${n.source || 'NEWS'} World News`, n.title, `${n.region || ''}`));
+    news.slice(0, 50).forEach((n, i) => push(`news-${i}`, 'news', `${n.source || 'NEWS'} World News`, n.title, `${n.region || ''}`));
     (noaa.alerts || []).forEach((a, i) => push(`weather-${i}`, 'weather', a.event, a.headline || '', `NOAA/NWS · ${a.severity || ''}`));
     (epa.stations || []).forEach((s, i) => push(`radiation-${i}`, 'radiation', `RadNet: ${s.location}`, `${s.analyte || '--'}: ${s.result || '--'} ${s.unit || ''}. State: ${s.state || ''}`, 'EPA Radiation Monitor'));
     (space.stationPositions || []).forEach((s, i) => push(`space-${i}`, 'space', s.name, `Orbital position estimate. Lat: ${s.lat} Lon: ${s.lon}`, 'Space Station'));

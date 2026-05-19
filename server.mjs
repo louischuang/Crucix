@@ -425,12 +425,11 @@ async function runSweepCycle() {
         synthesized.aiBrief = null;
       }
 
-      // Publish LLM ideas/brief as soon as they are ready. Translation can take much
-      // longer on local Ollama models, and should not keep the dashboard on stale ideas.
+      // Persist ideas/brief early, but keep browser updates until translation has
+      // settled so localized dashboards are not overwritten by English fallback data.
       synthesized.i18n = currentData?.i18n || synthesized.i18n || null;
       persistLLMArtifacts(synthesized);
       currentData = synthesized;
-      broadcast({ type: 'update', data: currentData });
 
       try {
         console.log('[Crucix] Generating LLM dashboard translations...');

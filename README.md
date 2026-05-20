@@ -115,7 +115,7 @@ A self-contained Jarvis-style HUD with:
 - **9 marker types** across both views: fire detections, air traffic, radiation sites, maritime chokepoints, SDR receivers, OSINT events, health alerts, geolocated news, conflict events
 - **Animated 3D flight corridor arcs** between air traffic hotspots and global hubs
 - **Region filters** (World, Americas, Europe, Middle East, Asia Pacific, Africa) — rotates the globe or zooms the flat map
-- **Live market data** — indexes, crypto, energy, commodities via Yahoo Finance (no API key needed)
+- **Live market data** — US, Taiwan, Hong Kong, and China indexes plus crypto, energy, and commodities via Yahoo Finance (no API key needed)
 - **Risk gauges** — VIX, high-yield spread, supply chain pressure index
 - **OSINT feed** — English-language posts from 17 Telegram intelligence channels (expandable)
 - **News ticker** — merged RSS + GDELT headlines + Telegram posts, auto-scrolling
@@ -390,7 +390,7 @@ crucix/
 
 | Source | What It Tracks | Auth |
 |--------|---------------|------|
-| **Yahoo Finance** | Real-time prices: SPY, QQQ, BTC, Gold, WTI, VIX + 9 more | None |
+| **Yahoo Finance** | Real-time prices: US/Taiwan/Hong Kong/China indexes, BTC, Gold, WTI, VIX + more | None |
 
 ---
 

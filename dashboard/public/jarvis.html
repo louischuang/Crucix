@@ -1644,12 +1644,12 @@ function renderLower(){
   }).join('');
 
   // Helper: format market quote card
-  const mktCard = (q) => {
+  const mktCard = (q, opts={}) => {
     if(!q||q.error) return '';
     const clr = q.changePct>=0?'var(--accent)':'var(--warn)';
     const arrow = q.changePct>=0?'&#9650;':'&#9660;';
     const isCrypto = q.symbol.includes('BTC') || q.symbol.includes('ETH');
-    const isIndex = q.symbol.startsWith('^');
+    const isIndex = opts.index || q.symbol.startsWith('^');
     const price = isCrypto
       ? `$${q.price.toLocaleString()}`
       : isIndex
@@ -1689,7 +1689,7 @@ function renderLower(){
   metrics[4] = {...metrics[4], spark: metals.silverRecent, sparkUp: (metals.silverChangePct ?? 0) >= 0};
 
   // Build live market cards from Yahoo Finance
-  const indexCards = (mkt.indexes||[]).map(mktCard).join('');
+  const indexCards = (mkt.indexes||[]).map(q => mktCard(q, { index: true })).join('');
   const cryptoCards = (mkt.crypto||[]).map(mktCard).join('');
   const rateCards = (mkt.rates||[]).map(mktCard).join('');
   const hasMarkets = indexCards || cryptoCards;

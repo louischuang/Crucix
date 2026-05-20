@@ -13,6 +13,9 @@ const SYMBOLS = {
   '^IXIC': 'Nasdaq Composite',
   '^DJI': 'Dow Jones',
   '^RUT': 'Russell 2000',
+  '^TWII': 'Taiwan Weighted',
+  '^HSI': 'Hang Seng',
+  '000001.SS': 'SSE Composite',
   // Rates / Credit
   TLT: '20Y+ Treasury',
   HYG: 'High Yield Corp',
@@ -117,7 +120,7 @@ export async function collect() {
       failed,
       timestamp: new Date().toISOString(),
     },
-    indexes: pickGroup(quotes, ['^GSPC', '^IXIC', '^DJI', '^RUT']),
+    indexes: pickGroup(quotes, ['^GSPC', '^IXIC', '^DJI', '^RUT', '^TWII', '^HSI', '000001.SS']),
     rates: pickGroup(quotes, ['TLT', 'HYG', 'LQD']),
     commodities: pickGroup(quotes, ['GC=F', 'SI=F', 'CL=F', 'BZ=F', 'NG=F']),
     crypto: pickGroup(quotes, ['BTC-USD', 'ETH-USD']),

@@ -19,6 +19,7 @@ import { generateDashboardTranslations } from './lib/llm/translate.mjs';
 import { TelegramAlerter } from './lib/alerts/telegram.mjs';
 import { DiscordAlerter } from './lib/alerts/discord.mjs';
 import { createPublicApiRouter } from './public-api/index.mjs';
+import { collectHKStocks, loadHKStocksSnapshot } from './lib/markets/hk-stocks.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = __dirname;
@@ -36,8 +37,11 @@ let currentData = null;    // Current synthesized dashboard data
 let lastSweepTime = null;  // Timestamp of last sweep
 let sweepStartedAt = null; // Timestamp when current/last sweep started
 let sweepInProgress = false;
+let hkStocksUpdateInProgress = false;
+let currentHKStocks = null;
 const startTime = Date.now();
 const sseClients = new Set();
+const HK_STOCKS_INTERVAL_MS = parseInt(process.env.HK_STOCKS_INTERVAL_MS || '300000', 10) || 300000;
 
 function safeTimestamp(ts = new Date().toISOString()) {
   return ts.replace(/[:.]/g, '-');
@@ -73,6 +77,12 @@ function applyLatestLLMArtifacts(data) {
     data.ideasSource = artifacts.ideasSource || data.ideasSource || 'disabled';
     data.aiBrief = artifacts.aiBrief || data.aiBrief || null;
     data.i18n = artifacts.i18n || data.i18n || null;
+    if (data.aiBrief && data.i18n) {
+      data.aiBrief.i18n = {
+        en: data.i18n.en?.aiBrief || data.aiBrief.i18n?.en || null,
+        zh: data.i18n.zh?.aiBrief || data.aiBrief.i18n?.zh || null,
+      };
+    }
     console.log('[Crucix] Loaded LLM artifacts from runs/llm/latest.json');
   } catch (err) {
     console.warn('[Crucix] Could not load LLM artifacts:', err.message);
@@ -316,6 +326,11 @@ app.get('/api/data', (req, res) => {
   res.json(currentData);
 });
 
+app.get('/api/hk-stocks', (req, res) => {
+  if (!currentHKStocks) return res.status(503).json({ error: 'No HK stocks data yet — first update in progress' });
+  res.json(currentHKStocks);
+});
+
 // API: health check
 app.get('/api/health', (req, res) => {
   res.json({
@@ -334,6 +349,15 @@ app.get('/api/health', (req, res) => {
     telegramEnabled: !!(config.telegram.botToken && config.telegram.chatId),
     refreshIntervalMinutes: config.refreshIntervalMinutes,
     language: currentLanguage,
+    hkStocks: {
+      enabled: true,
+      updateInProgress: hkStocksUpdateInProgress,
+      intervalSeconds: Math.round(HK_STOCKS_INTERVAL_MS / 1000),
+      lastUpdate: currentHKStocks?.updatedAt || null,
+      ok: currentHKStocks?.health?.ok || 0,
+      failed: currentHKStocks?.health?.failed || 0,
+      total: currentHKStocks?.health?.total || 0,
+    },
   });
 });
 
@@ -365,6 +389,35 @@ function broadcast(data) {
   }
 }
 
+function attachHKStocks(data) {
+  if (data) data.hkStocks = currentHKStocks;
+  return data;
+}
+
+async function updateHKStocks({ announce = true } = {}) {
+  if (hkStocksUpdateInProgress) return currentHKStocks;
+  hkStocksUpdateInProgress = true;
+  try {
+    console.log('[HK Stocks] Updating Hong Kong watchlist...');
+    const snapshot = await collectHKStocks({
+      rootDir: ROOT,
+      runsDir: RUNS_DIR,
+      previous: currentHKStocks,
+      intervalMs: HK_STOCKS_INTERVAL_MS,
+    });
+    currentHKStocks = snapshot;
+    if (currentData) currentData.hkStocks = snapshot;
+    console.log(`[HK Stocks] Updated ${snapshot.health.ok}/${snapshot.health.total} quotes in ${snapshot.durationMs}ms`);
+    if (announce) broadcast({ type: 'hk_stocks_update', data: snapshot });
+    return snapshot;
+  } catch (err) {
+    console.error('[HK Stocks] Update failed:', err.message);
+    return currentHKStocks;
+  } finally {
+    hkStocksUpdateInProgress = false;
+  }
+}
+
 // === Sweep Cycle ===
 async function runSweepCycle() {
   if (sweepInProgress) {
@@ -390,6 +443,7 @@ async function runSweepCycle() {
     // 3. Synthesize into dashboard format
     console.log('[Crucix] Synthesizing dashboard data...');
     const synthesized = await synthesize(rawData);
+    attachHKStocks(synthesized);
 
     // 4. Delta computation + memory
     const delta = memory.addRun(synthesized);
@@ -429,7 +483,7 @@ async function runSweepCycle() {
       // settled so localized dashboards are not overwritten by English fallback data.
       synthesized.i18n = currentData?.i18n || synthesized.i18n || null;
       persistLLMArtifacts(synthesized);
-      currentData = synthesized;
+      currentData = attachHKStocks(synthesized);
 
       try {
         console.log('[Crucix] Generating LLM dashboard translations...');
@@ -477,7 +531,7 @@ async function runSweepCycle() {
     // Prune old alerted signals
     memory.pruneAlertedSignals();
 
-    currentData = synthesized;
+    currentData = attachHKStocks(synthesized);
 
     // 6. Push to all connected browsers
     broadcast({ type: 'update', data: currentData });
@@ -542,14 +596,25 @@ async function start() {
 
     // Try to load existing data first for instant display (await so dashboard shows immediately)
     try {
+      currentHKStocks = loadHKStocksSnapshot(RUNS_DIR);
+      if (currentHKStocks) console.log('[HK Stocks] Loaded existing snapshot from runs/hk-stocks/latest.json');
       const existing = JSON.parse(readFileSync(join(RUNS_DIR, 'latest.json'), 'utf8'));
       const data = await synthesize(existing);
-      currentData = applyLatestLLMArtifacts(data);
+      currentData = attachHKStocks(applyLatestLLMArtifacts(data));
       console.log('[Crucix] Loaded existing data from runs/latest.json — dashboard ready instantly');
       broadcast({ type: 'update', data: currentData });
     } catch {
       console.log('[Crucix] No existing data found — first sweep required');
     }
+
+    updateHKStocks().catch(err => {
+      console.error('[HK Stocks] Initial update failed:', err.message || err);
+    });
+    setInterval(() => {
+      updateHKStocks().catch(err => {
+        console.error('[HK Stocks] Scheduled update failed:', err.message || err);
+      });
+    }, HK_STOCKS_INTERVAL_MS);
 
     // Run first sweep (refreshes data in background)
     console.log('[Crucix] Running initial sweep...');

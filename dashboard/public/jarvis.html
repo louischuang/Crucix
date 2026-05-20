@@ -174,6 +174,18 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
 .mc .ms{font-family:var(--mono);font-size:9px;color:var(--dim);margin-top:4px;display:block}
 .mc .mbar{height:3px;margin-top:8px;background:rgba(255,255,255,0.06);border-radius:1px;overflow:hidden}
 .mc .mbar span{display:block;height:100%;border-radius:1px;background:linear-gradient(90deg,rgba(68,204,255,0.4),var(--accent))}
+.hk-table{display:flex;flex-direction:column;gap:2px}
+.hk-row{display:grid;grid-template-columns:72px minmax(82px,1fr) 68px 64px;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.05)}
+.hk-row:last-child{border-bottom:none}
+.hk-symbol{font-family:var(--mono);font-size:10px;color:var(--accent);letter-spacing:0.02em}
+.hk-name{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hk-price,.hk-change{font-family:var(--mono);font-size:11px;text-align:right}
+.hk-change.up{color:#81c784}
+.hk-change.down{color:var(--danger)}
+.hk-change.flat{color:var(--dim)}
+.hk-meta{margin-top:8px;font-family:var(--mono);font-size:9px;color:var(--dim);display:flex;flex-wrap:wrap;gap:8px}
+.hk-empty{padding:18px;text-align:center;color:var(--dim);font-family:var(--mono);font-size:10px;border:1px solid rgba(255,255,255,0.05);background:rgba(255,255,255,0.02)}
+.hk-status{color:var(--warn)}
 .spark{display:flex;align-items:flex-end;gap:2px;height:24px;margin-top:6px}
 .spark-bar{width:6px;background:linear-gradient(to top,rgba(100,240,200,0.3),var(--accent));border-radius:1px 1px 0 0;transition:height 0.3s}
 .signal-row{padding:8px 10px;border-left:2px solid rgba(100,240,200,0.2);margin-bottom:4px;background:rgba(255,255,255,0.02)}
@@ -444,7 +456,7 @@ function localizedMapMarker(id, field, fallback) {
   return cleanText(row?.[field] || fallback || '');
 }
 function localizedBriefField(brief, field) {
-  return brief?.i18n?.[currentLang]?.[field] || brief?.[field];
+  return D.i18n?.[currentLang]?.aiBrief?.[field] || brief?.i18n?.[currentLang]?.[field] || brief?.[field];
 }
 function trWithVars(keyPath, fallback, vars = {}) {
   let value = t(keyPath, fallback);
@@ -1841,7 +1853,8 @@ function renderRight(){
         ${ds.signalBreakdown?`<span style="color:var(--dim)">${t('delta.new','New')}: <span style="color:#4dd0e1">${ds.signalBreakdown.new}</span> &#8593;${ds.signalBreakdown.escalated} &#8595;${ds.signalBreakdown.deescalated}</span>`:''}
       </div>`:''}
       <div class="delta-list">${deltaHtml}</div>
-    </div>`;
+    </div>
+    ${buildHKStocksPanel()}`;
 }
 
 // === HELPERS ===
@@ -1916,6 +1929,44 @@ function buildOsintPanel(panelClass='', maxHeight=260){
       <div class="sec-head"><h3>${bt('panels.osintStream','OSINT Stream')}</h3><span class="badge">${D.tg.urgent.length} ${t('badges.urgent','URGENT')}</span></div>
       <div class="ticker-wrap" style="--ticker-duration:${osintDuration}s;max-height:${maxHeight}px">
         <div class="ticker-track">${osintCards}${lowPerfMode ? '' : osintCards}</div>
+      </div>
+    </div>`;
+}
+
+function buildHKStocksPanel(){
+  const hk = D.hkStocks || null;
+  const fmtHKPrice = item => item?.price == null ? '--' : `${item.currency || 'HKD'} ${Number(item.price).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:3})}`;
+  const fmtHKPct = item => item?.changePct == null ? '--' : `${item.changePct > 0 ? '+' : ''}${Number(item.changePct).toFixed(2)}%`;
+  const fmtHKVol = value => {
+    if (value == null) return '--';
+    if (value >= 1e9) return `${(value/1e9).toFixed(1)}B`;
+    if (value >= 1e6) return `${(value/1e6).toFixed(1)}M`;
+    if (value >= 1e3) return `${(value/1e3).toFixed(1)}K`;
+    return String(value);
+  };
+  const hkItems = (hk?.items || []).slice(0, 12);
+  const hkRows = hkItems.length ? hkItems.map(item => {
+    const changeClass = item.changePct > 0 ? 'up' : item.changePct < 0 ? 'down' : 'flat';
+    const status = item.status && item.status !== 'live' ? ` <span class="hk-status">${item.status}</span>` : '';
+    return `<div class="hk-row">
+      <div class="hk-symbol">${cleanText(item.symbol)}</div>
+      <div class="hk-name" title="${cleanText(item.displayName || item.name || item.symbol)}">${cleanText(item.displayName || item.name || item.symbol)}${status}</div>
+      <div class="hk-price">${fmtHKPrice(item)}</div>
+      <div class="hk-change ${changeClass}">${fmtHKPct(item)}</div>
+    </div>`;
+  }).join('') : `<div class="hk-empty">${currentLang==='zh'?'等待港股報價更新':'HK quotes pending'}</div>`;
+  const hkUpdated = hk?.updatedAt ? getAge(hk.updatedAt) : '--';
+  const hkOk = hk?.health?.ok || 0;
+  const hkTotal = hk?.health?.total || 0;
+  const hkFailed = hk?.health?.failed || 0;
+  return `<div class="g-panel right-hk">
+      <div class="sec-head"><h3>HK Stocks / 港股觀察</h3><span class="badge">5M</span></div>
+      <div class="hk-table">${hkRows}</div>
+      <div class="hk-meta">
+        <span>${currentLang==='zh'?'更新':'Updated'} ${hkUpdated}</span>
+        <span>${hkOk}/${hkTotal} OK</span>
+        ${hkFailed ? `<span class="hk-status">${hkFailed} ${currentLang==='zh'?'異常':'stale'}</span>` : ''}
+        ${hkItems[0]?.volume ? `<span>${currentLang==='zh'?'量':'Vol'} ${fmtHKVol(hkItems[0].volume)}</span>` : ''}
       </div>
     </div>`;
 }
@@ -2052,6 +2103,9 @@ function connectSSE(){
           topbar.style.borderColor = 'var(--accent)';
           setTimeout(() => topbar.style.borderColor = '', 1500);
         }
+      } else if (msg.type === 'hk_stocks_update' && msg.data) {
+        D.hkStocks = msg.data;
+        renderRight();
       } else if (msg.type === 'sweep_start') {
         const badge = document.querySelector('.alert-badge');
         if (badge) { badge.textContent = t('badges.sweeping','SWEEPING...'); badge.style.borderColor = 'var(--accent)'; }

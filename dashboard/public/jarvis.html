@@ -160,9 +160,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
 .news-icon:hover{fill:rgba(129,212,250,1)}
 
 /* LOWER GRID — desktop balances news/ideas against macro markets */
-.lower{display:grid;grid-template-columns:minmax(250px,0.95fr) minmax(360px,1.45fr);grid-template-areas:"ticker macro" "ideas macro";gap:10px;margin-top:10px;align-items:flex-start}
+.lower{display:grid;grid-template-columns:minmax(250px,0.95fr) minmax(360px,1.45fr);grid-template-areas:"ticker macro" "taiwan macro" "ideas macro";gap:10px;margin-top:10px;align-items:flex-start}
 .lower .g-panel{min-width:0;box-sizing:border-box}
 .lower .lp-ticker{grid-area:ticker;max-width:none}
+.lower .lp-taiwan-news{grid-area:taiwan}
 .right-delta .delta-list{max-height:200px}
 .lower .lp-macro{grid-area:macro}
 .lower .lp-ideas{grid-area:ideas}
@@ -257,6 +258,15 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
 .tk-src.us{color:#90caf9;border-color:rgba(144,202,249,0.3)}
 .tk-src.other{color:#b0bec5;border-color:rgba(176,190,197,0.2)}
 .tk-head{font-size:11px;line-height:1.35;color:#c8d8d2;margin-top:3px}
+.taiwan-commentary{margin-top:8px;padding:10px;border:1px solid rgba(100,240,200,0.12);background:rgba(100,240,200,0.035)}
+.taiwan-commentary-head{font-family:var(--mono);font-size:9px;font-weight:700;color:var(--dim);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:6px}
+.taiwan-commentary p{font-size:11px;line-height:1.45;color:#c8d8d2;margin:0}
+.taiwan-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.taiwan-tag{font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;padding:3px 6px;border:1px solid rgba(176,190,197,0.22);color:#b0bec5;background:rgba(176,190,197,0.05)}
+.taiwan-tag.warning{color:var(--danger);border-color:rgba(255,95,99,0.36);background:rgba(255,95,99,0.08)}
+.taiwan-tag.optimism{color:var(--warn);border-color:rgba(255,184,76,0.36);background:rgba(255,184,76,0.08)}
+.taiwan-tag.watch{color:var(--accent2);border-color:rgba(68,204,255,0.32);background:rgba(68,204,255,0.06)}
+.taiwan-commentary-meta{font-family:var(--mono);font-size:8px;color:rgba(106,138,130,0.72);margin-top:6px}
 .tk-time{font-family:var(--mono);font-size:8px;color:var(--dim);margin-top:2px}
 
 /* DELTA BADGES */
@@ -314,7 +324,7 @@ body.low-perf .ticker-wrap::-webkit-scrollbar-thumb{background:rgba(100,240,200,
   .map-legend{left:8px;right:8px;bottom:8px;gap:4px}
   .leg-item{font-size:8px}
   .lower{display:flex;flex-wrap:wrap}
-  .lower .lp-ticker,.lower .lp-osint,.lower .lp-macro,.lower .lp-ideas{flex:1 1 100%;max-width:none}
+  .lower .lp-ticker,.lower .lp-taiwan-news,.lower .lp-osint,.lower .lp-macro,.lower .lp-ideas{flex:1 1 100%;max-width:none}
   .brief-grid{grid-template-columns:1fr}
   .metrics-row{grid-template-columns:repeat(2,1fr)}
   .src-grid{grid-template-columns:repeat(2,1fr)}
@@ -1723,6 +1733,33 @@ function renderLower(){
     return `<div class="tk-card ${n.urgent?'urgent':''} ${n.url?'clickable':''}"${urlAttr}><span class="tk-src ${sc}">${(n.source||'NEWS').substring(0,12)}</span><span class="tk-time">${age}</span><div class="tk-head">${localizedByIndex('newsFeed', i, 'headline', n.headline||'')}</div>${n.url?'<span class="tk-link">&#8599;</span>':''}</div>`;
   }).join('');
   const tickerDuration = Math.max(20, feed.length * 2.5);
+  const taiwanFeed = (D.taiwanForeignNews?.items || []).slice(0, 16);
+  const taiwanCards = taiwanFeed.map((n, i) => {
+    const sc = srcClass(n.source || n.country);
+    const age = n.timestamp ? getAge(n.timestamp) : '';
+    const country = n.country ? ` · ${n.country}` : '';
+    const urlAttr = n.url ? ` data-url="${String(n.url).replace(/&/g,'&amp;').replace(/"/g,'&quot;')}"` : '';
+    return `<div class="tk-card ${n.url?'clickable':''}"${urlAttr}><span class="tk-src ${sc}">${(n.source||'FOREIGN').substring(0,12)}</span><span class="tk-time">${age}${country}</span><div class="tk-head">${localizedByIndex('taiwanForeignNews', i, 'headline', n.headline||'')}</div>${n.url?'<span class="tk-link">&#8599;</span>':''}</div>`;
+  }).join('');
+  const taiwanDuration = Math.max(18, taiwanFeed.length * 3);
+  const twCommentary = D.taiwanForeignNews?.commentary || null;
+  const twCommentaryTags = (twCommentary?.tags || []).slice(0, 5);
+  const twCommentaryTagsHtml = twCommentaryTags.map(tag => {
+    const cls = ['warning','optimism','watch'].includes(tag.type) ? tag.type : 'watch';
+    const reason = tag.reason ? ` title="${popupSafeHtml(tag.reason).replace(/<br>/g,' ')}"` : '';
+    return `<span class="taiwan-tag ${cls}"${reason}>${popupSafeHtml(tag.label || tag.type || '觀察')}</span>`;
+  }).join('');
+  const twCommentaryMeta = twCommentary
+    ? `${twCommentary.source || 'analysis'} · ${twCommentary.confidence || 'MEDIUM'}${twCommentary.articleFetchedCount != null ? ` · ${twCommentary.articleFetchedCount} crawled` : ''}`
+    : '';
+  const twCommentaryHtml = twCommentary?.summary
+    ? `<div class="taiwan-commentary">
+        <div class="taiwan-commentary-head">綜合解說 / Commentary</div>
+        <p>${popupSafeHtml(twCommentary.summary)}</p>
+        ${twCommentaryTagsHtml ? `<div class="taiwan-tags">${twCommentaryTagsHtml}</div>` : ''}
+        <div class="taiwan-commentary-meta">${popupSafeHtml(twCommentaryMeta)}</div>
+      </div>`
+    : '';
 
   // Leverageable Ideas (LLM-only feature)
   const hasIdeas = D.ideas && D.ideas.length > 0;
@@ -1747,6 +1784,12 @@ function renderLower(){
       <div class="ticker-wrap" style="--ticker-duration:${tickerDuration}s">
         <div class="ticker-track">${tickerCards}${lowPerfMode ? '' : tickerCards}</div>
       </div>
+    </div>`;
+  const taiwanPanel = `<div class="g-panel lp-taiwan-news" style="display:flex;flex-direction:column">
+      <div class="sec-head"><h3>${bt('panels.taiwanForeignNews','Taiwan In Foreign Press')}</h3><span class="badge">${taiwanFeed.length} ${t('badges.items','ITEMS')}</span></div>
+      ${taiwanFeed.length ? `<div class="ticker-wrap" style="--ticker-duration:${taiwanDuration}s;max-height:240px">
+        <div class="ticker-track">${taiwanCards}${lowPerfMode ? '' : taiwanCards}</div>
+      </div>${twCommentaryHtml}` : `<div style="padding:16px;text-align:center;color:var(--dim);font-family:var(--mono);font-size:10px">${t('common.noData','No data')}</div>`}
     </div>`;
   const osintPanel = mobile ? buildOsintPanel('lp-osint', 240) : '';
   const macroPanel = `<div class="g-panel lp-macro">
@@ -1776,7 +1819,7 @@ function renderLower(){
       ${ideasHtml}
       <div class="disclosure">${t('ideas.disclosure','FOR INFORMATIONAL PURPOSES ONLY. This is not financial advice, a recommendation to buy or sell any security, or a solicitation of any kind. All signal-based observations are derived from publicly available OSINT data and should not be relied upon for investment decisions. Consult a licensed financial advisor before making any investment. Past performance does not guarantee future results.')}</div>
     </div>`;
-  document.getElementById('lowerGrid').innerHTML=`${tickerPanel}${osintPanel}${macroPanel}${ideasPanel}`;
+  document.getElementById('lowerGrid').innerHTML=`${tickerPanel}${taiwanPanel}${osintPanel}${macroPanel}${ideasPanel}`;
 }
 
 // === RIGHT RAIL ===

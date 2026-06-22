@@ -48,6 +48,7 @@ import { briefing as cisaKev } from './sources/cisa-kev.mjs';
 import { briefing as cloudflareRadar } from './sources/cloudflare-radar.mjs';
 import { briefing as newsMonitor } from './sources/news-monitor.mjs';
 import { briefing as officialMonitor } from './sources/official-monitor.mjs';
+import { briefing as taiwanForeignNews } from './sources/taiwan-foreign-news.mjs';
 
 const SOURCE_TIMEOUT_MS = 30_000; // 30s max per individual source
 
@@ -69,7 +70,7 @@ export async function runSource(name, fn, ...args) {
 }
 
 export async function fullBriefing() {
-  console.error('[Crucix] Starting intelligence sweep — 31 sources...');
+  console.error('[Crucix] Starting intelligence sweep — 32 sources...');
   const start = Date.now();
 
   const allPromises = [
@@ -116,6 +117,7 @@ export async function fullBriefing() {
 
     // Tier 7: Curated News Monitoring
     runSource('NewsMonitor', newsMonitor),
+    runSource('TaiwanForeignNews', taiwanForeignNews),
 
     // Tier 8: Official policy / sanctions monitoring
     runSource('OfficialMonitor', officialMonitor),

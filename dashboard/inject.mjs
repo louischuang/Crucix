@@ -557,6 +557,25 @@ export async function synthesize(data) {
       summary: item.summary?.substring(0, 180),
     })),
   };
+  const taiwanForeignNewsData = data.sources.TaiwanForeignNews || {};
+  const taiwanForeignNews = {
+    summary: taiwanForeignNewsData.summary || {},
+    feeds: taiwanForeignNewsData.feeds || [],
+    commentary: taiwanForeignNewsData.commentary || null,
+    items: (taiwanForeignNewsData.items || []).slice(0, 30).map(item => ({
+      headline: item.headline?.substring(0, 180),
+      source: item.source,
+      country: item.country,
+      type: item.type || 'taiwan-foreign-news',
+      timestamp: item.timestamp,
+      url: sanitizeExternalUrl(item.url),
+      summary: item.summary?.substring(0, 220),
+      articleFetched: Boolean(item.articleFetched),
+      articleExcerpt: item.articleExcerpt?.substring(0, 600),
+      matchedKeywords: item.matchedKeywords || [],
+      tags: item.tags || [],
+    })),
+  };
   const officialMonitorData = data.sources.OfficialMonitor || {};
   const officialMonitor = {
     summary: officialMonitorData.summary || {},
@@ -667,7 +686,7 @@ export async function synthesize(data) {
     },
     sdr,
     tg: { posts: tgData.totalPosts || 0, urgent: tgUrgent, topPosts: tgTop },
-    who, fred, energy, metals, bls, treasury, gscpi, defense, noaa, epa, acled, gdelt, newsMonitor, officialMonitor, space, health, news,
+    who, fred, energy, metals, bls, treasury, gscpi, defense, noaa, epa, acled, gdelt, newsMonitor, taiwanForeignNews, officialMonitor, space, health, news,
     markets, // Live Yahoo Finance market data
     ideas: [], ideasSource: 'disabled',
     mapMarkers: buildMapMarkers(),

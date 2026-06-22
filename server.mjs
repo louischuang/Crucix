@@ -15,6 +15,7 @@ import { MemoryManager } from './lib/delta/index.mjs';
 import { createLLMProvider } from './lib/llm/index.mjs';
 import { generateLLMIdeas } from './lib/llm/ideas.mjs';
 import { generateLLMBrief } from './lib/llm/brief.mjs';
+import { generateTaiwanForeignNewsCommentary } from './lib/llm/taiwan-foreign-news.mjs';
 import { generateDashboardTranslations } from './lib/llm/translate.mjs';
 import { TelegramAlerter } from './lib/alerts/telegram.mjs';
 import { DiscordAlerter } from './lib/alerts/discord.mjs';
@@ -55,6 +56,7 @@ function persistLLMArtifacts(data) {
     ideasSource: data.ideasSource || 'disabled',
     ideas: data.ideas || [],
     aiBrief: data.aiBrief || null,
+    taiwanForeignNewsCommentary: data.taiwanForeignNews?.commentary || null,
     i18n: data.i18n || null,
     meta: data.meta || null,
     deltaSummary: data.delta?.summary || null,
@@ -76,6 +78,9 @@ function applyLatestLLMArtifacts(data) {
     data.ideas = Array.isArray(artifacts.ideas) ? artifacts.ideas : (data.ideas || []);
     data.ideasSource = artifacts.ideasSource || data.ideasSource || 'disabled';
     data.aiBrief = artifacts.aiBrief || data.aiBrief || null;
+    if (artifacts.taiwanForeignNewsCommentary && data.taiwanForeignNews) {
+      data.taiwanForeignNews.commentary = artifacts.taiwanForeignNewsCommentary;
+    }
     data.i18n = artifacts.i18n || data.i18n || null;
     if (data.aiBrief && data.i18n) {
       data.aiBrief.i18n = {
@@ -477,6 +482,23 @@ async function runSweepCycle() {
       } catch (briefErr) {
         console.error('[Crucix] LLM AI brief failed (non-fatal):', briefErr.message);
         synthesized.aiBrief = null;
+      }
+
+      try {
+        console.log('[Crucix] Generating Taiwan foreign news commentary...');
+        const commentary = await generateTaiwanForeignNewsCommentary(llmProvider, synthesized.taiwanForeignNews);
+        if (commentary && synthesized.taiwanForeignNews) {
+          synthesized.taiwanForeignNews.commentary = {
+            ...(synthesized.taiwanForeignNews.commentary || {}),
+            ...commentary,
+            tags: commentary.tags?.length
+              ? commentary.tags
+              : (synthesized.taiwanForeignNews.commentary?.tags || []),
+          };
+        }
+        console.log(`[Crucix] Taiwan foreign news commentary ${commentary ? 'generated' : 'using fallback'}`);
+      } catch (twNewsErr) {
+        console.error('[Crucix] Taiwan foreign news commentary failed (non-fatal):', twNewsErr.message);
       }
 
       // Persist ideas/brief early, but keep browser updates until translation has

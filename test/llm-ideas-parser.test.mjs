@@ -61,4 +61,25 @@ describe('parseIdeasResponse', () => {
     assert.equal(ideas[0].ticker, 'BZ=F');
     assert.equal(ideas[0].source, 'llm');
   });
+
+  it('parses snake_case trade_ideas envelopes from local models', () => {
+    const ideas = parseIdeasResponse(`{
+      "trade_ideas": [
+        {
+          "title": "Long Brent Crude on Hormuz Escalation",
+          "type": "LONG",
+          "ticker": "BZ=F",
+          "confidence": "HIGH",
+          "rationale": "Hormuz risk can pressure Brent higher.",
+          "risk": "Diplomatic de-escalation",
+          "horizon": "Days",
+          "signals": ["Hormuz escalation", "Middle East air activity"]
+        }
+      ]
+    }`);
+
+    assert.equal(ideas.length, 1);
+    assert.equal(ideas[0].title, 'Long Brent Crude on Hormuz Escalation');
+    assert.equal(ideas[0].ticker, 'BZ=F');
+  });
 });
